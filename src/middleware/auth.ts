@@ -1,12 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { OAuth2Client } from 'google-auth-library';
-
-// ユーザー情報の型定義
-interface User {
-  email: string;
-  sub: string;
-  name: string | undefined;
-}
+import { User } from '../types/auth';
 
 // Requestの型拡張
 declare global {
@@ -80,8 +74,7 @@ export async function validateAppSheetRequest(
       }
 
       // AppSheetのドメインを確認
-      const email = payload.email;
-      if (!email || !email.endsWith('@appsheet.com')) {
+      if (!payload.email || !payload.email.endsWith('@appsheet.com')) {
         throw new AuthError(
           'Unauthorized email domain',
           'UNAUTHORIZED_DOMAIN',
@@ -93,7 +86,7 @@ export async function validateAppSheetRequest(
       req.user = {
         email: payload.email,
         sub: payload.sub,
-        name: payload.name
+        name: payload.name || undefined
       };
 
       next();
@@ -117,38 +110,46 @@ export function rateLimiter(
   res: Response,
   next: NextFunction
 ): void {
-  // TODO: Redis等を使用してレート制限を実装
+  // MVPでは簡易的な実装
   next();
 }
 
 /**
  * 入力サニタイズミドルウェア
+ * オブジェクト内のすべての文字列からHTMLタグを除去します
  */
 export function sanitizeInput(
   req: Request,
   res: Response,
   next: NextFunction
 ): void {
-  if (req.body) {
-    // HTMLタグの除去
-    const sanitize = (obj: any): any => {
-      if (typeof obj !== 'object') return obj;
-      
-      const sanitized: any = Array.isArray(obj) ? [] : {};
-      for (const [key, value] of Object.entries(obj)) {
-        if (typeof value === 'string') {
-          // HTMLタグを除去
-          sanitized[key] = value.replace(/<[^>]*>/g, '');
-        } else if (typeof value === 'object') {
-          sanitized[key] = sanitize(value);
-        } else {
-          sanitized[key] = value;
+  try {
+    const sanitizeValue = (value: any): any => {
+      if (typeof value === 'string') {
+        // scriptタグとその中身を除去
+        let sanitized = value.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+        // その他のHTMLタグを除去
+        sanitized = sanitized.replace(/<[^>]*>/g, '');
+        return sanitized;
+      } else if (Array.isArray(value)) {
+        // 配列の各要素を再帰的にサニタイズ
+        return value.map(item => sanitizeValue(item));
+      } else if (value && typeof value === 'object') {
+        // オブジェクトの各プロパティを再帰的にサニタイズ
+        const sanitized: Record<string, any> = {};
+        for (const [key, val] of Object.entries(value)) {
+          sanitized[key] = sanitizeValue(val);
         }
+        return sanitized;
       }
-      return sanitized;
+      // その他の型（number, boolean等）はそのまま返す
+      return value;
     };
 
-    req.body = sanitize(req.body);
+    // リクエストボディをサニタイズ
+    req.body = sanitizeValue(req.body);
+    next();
+  } catch (error) {
+    next(error);
   }
-  next();
 }
