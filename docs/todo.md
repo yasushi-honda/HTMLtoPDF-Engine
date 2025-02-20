@@ -167,7 +167,20 @@
   - `src/routes/pdf.ts`: APIエンドポイントを新しい型定義に合わせて更新
   - オーバーレイ機能（circle, triangle, cross, diamond）を実装済み
 
-- [ ] 動作確認とテスト
+- [x] テストコードの更新
+  - [x] カレンダー生成のユニットテスト
+  - [x] PDF生成のE2Eテスト
+  - [x] セキュリティテスト
+  - [x] 負荷テスト
+
+  【引き継ぎ内容】
+  - `src/tests/calendar.test.ts`: カレンダー生成の基本機能テスト
+  - `src/tests/pdf.test.ts`: PDF生成の基本機能テスト
+  - `src/tests/e2e/`: E2Eテストを実装（認証、生成、プレビュー）
+  - `src/tests/security/`: セキュリティテストを実装（認証、入力検証）
+  - `src/tests/load/`: 負荷テストを実装（同時リクエスト処理）
+
+- [ ] 動作確認とデバッグ
   - [ ] カレンダー生成機能の動作確認
   - [ ] PDF変換の動作確認
   - [ ] Google Driveアップロードの動作確認
