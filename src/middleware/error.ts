@@ -26,6 +26,15 @@ export function errorHandler(
     return;
   }
 
+  // 認証エラー
+  if ('code' in err && 'status' in err) {
+    const authError = err as { code: string; status: number; message: string };
+    errorResponse.code = authError.code;
+    errorResponse.message = authError.message;
+    res.status(authError.status).json(errorResponse);
+    return;
+  }
+
   // バリデーションエラー
   if (err.name === 'ValidationError') {
     errorResponse.code = 'VALIDATION_ERROR';
