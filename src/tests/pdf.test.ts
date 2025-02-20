@@ -1,62 +1,72 @@
 import { PDFService } from '../services/pdf';
-import { PDFOptions } from '../types/pdf';
+import { GeneratePDFRequest } from '../types/api';
+import { expect } from 'chai';
 
 describe('PDFService', () => {
-  let pdfService: PDFService;
+  let service: PDFService;
 
   beforeEach(() => {
-    pdfService = new PDFService();
+    service = new PDFService();
   });
 
   describe('generatePDF', () => {
-    it('PDFを正しく生成できること', async () => {
-      const options: PDFOptions = {
-        html: '<h1>テスト</h1>',
-        filename: 'test.pdf'
+    it('should generate a PDF file', async () => {
+      const request: GeneratePDFRequest = {
+        year: 2025,
+        month: 2,
+        overlay: [
+          {
+            days: [1, 15],
+            type: 'circle'
+          }
+        ]
       };
 
-      const result = await pdfService.generatePDF(options);
-
-      expect(result.buffer).toBeInstanceOf(Buffer);
-      expect(result.buffer.length).toBeGreaterThan(0);
-      expect(result.filename).toBe('test.pdf');
-      expect(result.timestamp).toBeInstanceOf(Date);
+      const pdf = await service.generatePDF(request);
+      
+      expect(pdf).toBeInstanceOf(Buffer);
+      expect(pdf.length).toBeGreaterThan(0);
     }, 30000); // タイムアウトを30秒に延長
 
-    it('カスタム設定でPDFを生成できること', async () => {
-      const options: PDFOptions = {
-        html: '<h1>テスト</h1>',
-        filename: 'test.pdf',
-        pageConfig: {
-          format: 'A3',
-          orientation: 'landscape',
-          margin: {
-            top: '30mm',
-            right: '30mm',
-            bottom: '30mm',
-            left: '30mm'
-          }
-        }
+    it('should handle errors gracefully', async () => {
+      const request: GeneratePDFRequest = {
+        year: -1, // 不正な年
+        month: 13, // 不正な月
+        overlay: []
       };
 
-      const result = await pdfService.generatePDF(options);
-
-      expect(result.buffer).toBeInstanceOf(Buffer);
-      expect(result.buffer.length).toBeGreaterThan(0);
+      await expect(service.generatePDF(request)).rejects.toThrow();
     }, 30000); // タイムアウトを30秒に延長
   });
 
-  describe('generatePreviewHTML', () => {
-    it('プレビューHTMLを生成できること', async () => {
-      const options: PDFOptions = {
-        html: '<h1>テスト</h1>',
-        filename: 'test.pdf'
+  describe('generatePreviewHtml', () => {
+    it('should generate preview HTML', async () => {
+      const request: GeneratePDFRequest = {
+        year: 2025,
+        month: 2,
+        overlay: [
+          {
+            days: [1, 15],
+            type: 'circle'
+          }
+        ]
       };
 
-      const result = await pdfService.generatePreviewHTML(options);
+      const html = await service.generatePreviewHtml(request);
+      
+      expect(typeof html).toBe('string');
+      expect(html).toContain('<!DOCTYPE html>');
+      expect(html).toContain('2025年2月');
+    }, 30000); // タイムアウトを30秒に延長
 
-      expect(typeof result).toBe('string');
-      expect(result).toContain('<h1>テスト</h1>');
+    it('should handle errors gracefully', async () => {
+      const request: GeneratePDFRequest = {
+        year: -1, // 不正な年
+        month: 13, // 不正な月
+        overlay: []
+      };
+
+      await expect(service.generatePreviewHtml(request)).rejects.toThrow();
     }, 30000); // タイムアウトを30秒に延長
   });
 });

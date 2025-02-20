@@ -1,79 +1,61 @@
-import { CalendarService } from '../services/calendar';
-import { CalendarOptions } from '../types/calendar';
+import { CalendarGenerator } from '../services/calendar';
+import { GeneratePDFRequest } from '../types/api';
 
-describe('CalendarService', () => {
-  let service: CalendarService;
+describe('CalendarGenerator', () => {
+  const generator = new CalendarGenerator();
 
-  beforeEach(() => {
-    service = new CalendarService();
+  it('should generate HTML for a calendar', async () => {
+    const request: GeneratePDFRequest = {
+      year: 2025,
+      month: 2,
+      overlay: [
+        {
+          days: [1, 15],
+          type: 'circle'
+        }
+      ]
+    };
+
+    const html = await generator.generateHTML(request);
+    
+    // 基本的なHTML構造の確認
+    expect(html).toContain('<!DOCTYPE html>');
+    expect(html).toContain('<html>');
+    expect(html).toContain('</html>');
+    
+    // カレンダーのタイトル確認
+    expect(html).toContain('2025年2月');
+    
+    // 曜日ヘッダーの確認
+    expect(html).toContain('<th>日</th>');
+    expect(html).toContain('<th>月</th>');
+    expect(html).toContain('<th>火</th>');
+    expect(html).toContain('<th>水</th>');
+    expect(html).toContain('<th>木</th>');
+    expect(html).toContain('<th>金</th>');
+    expect(html).toContain('<th>土</th>');
+    
+    // オーバーレイの確認
+    expect(html).toContain('<div class="circle"></div>');
   });
 
-  describe('generateCalendarDays', () => {
-    it('正しい日数のカレンダーを生成すること', () => {
-      const options: CalendarOptions = {
-        year: 2025,
-        month: 2, // 2月
-        overlay: [],
-      };
+  it('should handle different overlay types', async () => {
+    const request: GeneratePDFRequest = {
+      year: 2025,
+      month: 2,
+      overlay: [
+        { days: [1], type: 'circle' },
+        { days: [2], type: 'triangle' },
+        { days: [3], type: 'cross' },
+        { days: [4], type: 'diamond' }
+      ]
+    };
 
-      const days = service.generateCalendarDays(options);
-      expect(days.length).toBe(28); // 2025年2月は28日まで
-    });
-
-    it('オーバーレイが正しく適用されること', () => {
-      const options: CalendarOptions = {
-        year: 2025,
-        month: 2,
-        overlay: [
-          { type: 'circle', days: [1, 15] },
-          { type: 'triangle', days: [10, 20] },
-        ],
-      };
-
-      const days = service.generateCalendarDays(options);
-      
-      // 1日目と15日目に○が付いているか確認
-      expect(days[0].overlayType).toBe('circle');
-      expect(days[14].overlayType).toBe('circle');
-      
-      // 10日目と20日目に△が付いているか確認
-      expect(days[9].overlayType).toBe('triangle');
-      expect(days[19].overlayType).toBe('triangle');
-    });
-  });
-
-  describe('generateCalendarHTML', () => {
-    it('有効なHTML文字列を生成すること', () => {
-      const options: CalendarOptions = {
-        year: 2025,
-        month: 2,
-        overlay: [
-          { type: 'circle', days: [1] },
-        ],
-      };
-
-      const html = service.generateCalendarHTML(options);
-      
-      // 基本的なHTML構造の確認
-      expect(html).toContain('<table class="exact-calendar">');
-      expect(html).toContain('</table>');
-      
-      // オーバーレイの確認
-      expect(html).toContain('class="day circle"');
-    });
-
-    it('月末の空セルが正しく追加されること', () => {
-      const options: CalendarOptions = {
-        year: 2025,
-        month: 2,
-        overlay: [],
-      };
-
-      const html = service.generateCalendarHTML(options);
-      const emptyTdCount = (html.match(/<td><\/td>/g) || []).length;
-      
-      // 28日の後に空セルが追加されているか確認
-      expect(emptyTdCount).toBeGreaterThan(0);
-    });
+    const html = await generator.generateHTML(request);
+    
+    expect(html).toContain('<div class="circle"></div>');
+    expect(html).toContain('<div class="triangle"></div>');
+    expect(html).toContain('<div class="cross">×</div>');
+    expect(html).toContain('<div class="diamond"></div>');
   });
 });
