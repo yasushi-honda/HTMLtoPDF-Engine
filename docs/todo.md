@@ -48,11 +48,11 @@
   - [x] PDF生成ロジックの実装
   - [x] テストケースの作成
 
-- [ ] 2.3 Google Drive連携
-  - [ ] Workload Identity設定
-  - [ ] Drive API統合
-  - [ ] アップロード機能実装
-  - [ ] URL生成処理
+- [x] 2.3 Google Drive連携
+  - [x] Workload Identity設定
+  - [x] Drive API統合
+  - [x] アップロード機能実装
+  - [x] URL生成処理
 
 ## 開発メモ
 ### 2025-02-20
@@ -70,6 +70,12 @@
   - カスタマイズ可能なページ設定オプション追加
   - プレビューHTML生成機能の追加
   - テストカバレッジ94%以上達成
+- Google Drive連携機能の実装完了
+  - Workload Identity認証の設定
+  - Drive APIを使用したファイルアップロード機能
+  - ファイル権限の自動設定機能
+  - アップロードファイルのURL生成
+  - テストの実装と実行
 
 ### 2025-02-21
 - カレンダー生成機能の実装完了
@@ -121,11 +127,11 @@
   - [x] PDFオプション設定（A4、マージン等）
   - [x] エラーハンドリング実装
 
-- [ ] 2.3 Google Drive連携
-  - [ ] Workload Identity設定
-  - [ ] Drive API統合
-  - [ ] アップロード機能実装
-  - [ ] URL生成処理
+- [x] 2.3 Google Drive連携
+  - [x] Workload Identity設定
+  - [x] Drive API統合
+  - [x] アップロード機能実装
+  - [x] URL生成処理
 
 ## フェーズ3: APIエンドポイント実装
 - [ ] 3.1 Express.jsサーバー構築
