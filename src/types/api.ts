@@ -4,12 +4,16 @@ import { PDFOptions } from './pdf';
  * PDF生成リクエスト
  */
 export interface GeneratePDFRequest {
-  /** 年 */
-  year: number;
-  /** 月 */
-  month: number;
-  /** オーバーレイ設定 */
-  overlay: Array<{
+  /** テンプレートID */
+  template: string;
+  /** テンプレートに渡すデータ */
+  data: Record<string, any>;
+  /** 年（オプション） */
+  year?: number;
+  /** 月（オプション） */
+  month?: number;
+  /** オーバーレイ設定（オプション） */
+  overlay?: Array<{
     type: 'circle' | 'triangle' | 'cross' | 'diamond';
     days: number[];
   }>;

@@ -8,7 +8,12 @@ export class CalendarGenerator {
    * カレンダーHTMLの生成
    */
   public async generateHTML(request: GeneratePDFRequest): Promise<string> {
-    const { year, month, overlay } = request;
+    const { year, month, overlay = [] } = request;
+
+    if (year === undefined || month === undefined) {
+      throw new Error('Year and month are required for calendar generation');
+    }
+
     const daysInMonth = new Date(year, month, 0).getDate();
     const firstDayOfMonth = new Date(year, month - 1, 1).getDay();
     
@@ -20,93 +25,112 @@ export class CalendarGenerator {
           <meta charset="UTF-8">
           <title>Calendar ${year}/${month}</title>
           <style>
-            body {
-              font-family: Arial, sans-serif;
-              margin: 0;
-              padding: 20px;
-            }
-            .calendar {
-              width: 100%;
-              border-collapse: collapse;
-            }
-            .calendar th {
-              background: #f0f0f0;
-              padding: 10px;
-              text-align: center;
-              border: 1px solid #ddd;
-            }
-            .calendar td {
-              width: 14.28%;
-              height: 100px;
-              border: 1px solid #ddd;
-              vertical-align: top;
-              padding: 5px;
-              position: relative;
-            }
-            .date {
-              font-size: 1.2em;
-              font-weight: bold;
-              margin-bottom: 5px;
-            }
-            .circle {
-              position: absolute;
-              top: 50%;
-              left: 50%;
-              transform: translate(-50%, -50%);
-              width: 40px;
-              height: 40px;
-              border: 2px solid red;
-              border-radius: 50%;
-            }
-            .triangle {
-              position: absolute;
-              top: 50%;
-              left: 50%;
-              transform: translate(-50%, -50%);
-              width: 0;
-              height: 0;
-              border-left: 20px solid transparent;
-              border-right: 20px solid transparent;
-              border-bottom: 40px solid blue;
-            }
-            .cross {
-              position: absolute;
-              top: 50%;
-              left: 50%;
-              transform: translate(-50%, -50%);
-              color: green;
-              font-size: 40px;
-            }
-            .diamond {
-              position: absolute;
-              top: 50%;
-              left: 50%;
-              transform: translate(-50%, -50%) rotate(45deg);
-              width: 30px;
-              height: 30px;
-              background: purple;
-            }
+            ${this.getStyles()}
           </style>
         </head>
         <body>
-          <h1>${year}年${month}月</h1>
-          <table class="calendar">
-            <tr>
-              <th>日</th>
-              <th>月</th>
-              <th>火</th>
-              <th>水</th>
-              <th>木</th>
-              <th>金</th>
-              <th>土</th>
-            </tr>
+          <div class="calendar">
+            ${this.generateCalendarHeader(year, month)}
             ${this.generateCalendarBody(firstDayOfMonth, daysInMonth, overlay)}
-          </table>
+          </div>
         </body>
       </html>
     `;
 
     return html;
+  }
+
+  /**
+   * スタイルの取得
+   */
+  private getStyles(): string {
+    return `
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+      }
+      .calendar {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .calendar th {
+        background: #f0f0f0;
+        padding: 10px;
+        text-align: center;
+        border: 1px solid #ddd;
+      }
+      .calendar td {
+        width: 14.28%;
+        height: 100px;
+        border: 1px solid #ddd;
+        vertical-align: top;
+        padding: 5px;
+        position: relative;
+      }
+      .date {
+        font-size: 1.2em;
+        font-weight: bold;
+        margin-bottom: 5px;
+      }
+      .circle {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 40px;
+        height: 40px;
+        border: 2px solid red;
+        border-radius: 50%;
+      }
+      .triangle {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 0;
+        height: 0;
+        border-left: 20px solid transparent;
+        border-right: 20px solid transparent;
+        border-bottom: 40px solid blue;
+      }
+      .cross {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: green;
+        font-size: 40px;
+      }
+      .diamond {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(45deg);
+        width: 30px;
+        height: 30px;
+        background: purple;
+      }
+    `;
+  }
+
+  /**
+   * カレンダーヘッダーの生成
+   */
+  private generateCalendarHeader(year: number, month: number): string {
+    return `
+      <h1>${year}年${month}月</h1>
+      <table class="calendar">
+        <tr>
+          <th>日</th>
+          <th>月</th>
+          <th>火</th>
+          <th>水</th>
+          <th>木</th>
+          <th>金</th>
+          <th>土</th>
+        </tr>
+    `;
   }
 
   /**
@@ -149,7 +173,7 @@ export class CalendarGenerator {
     }
     html += '<tr>' + currentWeek + '</tr>';
 
-    return html;
+    return html + '</table>';
   }
 
   /**

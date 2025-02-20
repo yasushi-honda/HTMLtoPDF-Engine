@@ -57,4 +57,18 @@ export class PDFService {
       throw new Error(`Preview generation failed: ${errorMessage}`);
     }
   }
+
+  /**
+   * テンプレート一覧の取得
+   */
+  public getTemplates(): { id: string; name: string; description: string }[] {
+    return [
+      {
+        id: 'report',
+        name: 'レポート',
+        description: 'テスト用テンプレート'
+      }
+      // 他のテンプレートをここに追加
+    ];
+  }
 }

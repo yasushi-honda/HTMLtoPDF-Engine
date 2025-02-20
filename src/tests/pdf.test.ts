@@ -1,6 +1,6 @@
 import { PDFService } from '../services/pdf';
 import { GeneratePDFRequest } from '../types/api';
-import { expect } from 'chai';
+import { expect, test, describe } from '@jest/globals';
 
 describe('PDFService', () => {
   let service: PDFService;
@@ -10,26 +10,47 @@ describe('PDFService', () => {
   });
 
   describe('generatePDF', () => {
-    it('should generate a PDF file', async () => {
+    test('PDFを生成できること', async () => {
       const request: GeneratePDFRequest = {
+        template: 'calendar',
+        data: {
+          title: 'テストカレンダー'
+        },
         year: 2025,
         month: 2,
-        overlay: [
-          {
-            days: [1, 15],
-            type: 'circle'
-          }
-        ]
+        overlay: [{
+          type: 'circle',
+          days: [1, 15]
+        }]
       };
 
       const pdf = await service.generatePDF(request);
-      
-      expect(pdf).toBeInstanceOf(Buffer);
+      expect(Buffer.isBuffer(pdf)).toBe(true);
       expect(pdf.length).toBeGreaterThan(0);
     }, 30000); // タイムアウトを30秒に延長
 
-    it('should handle errors gracefully', async () => {
+    test('オーバーレイなしでPDFを生成できること', async () => {
       const request: GeneratePDFRequest = {
+        template: 'calendar',
+        data: {
+          title: 'シンプルカレンダー'
+        },
+        year: 2025,
+        month: 2,
+        overlay: []
+      };
+
+      const pdf = await service.generatePDF(request);
+      expect(Buffer.isBuffer(pdf)).toBe(true);
+      expect(pdf.length).toBeGreaterThan(0);
+    }, 30000); // タイムアウトを30秒に延長
+
+    test('should handle errors gracefully', async () => {
+      const request: GeneratePDFRequest = {
+        template: 'calendar',
+        data: {
+          title: 'エラーカレンダー'
+        },
         year: -1, // 不正な年
         month: 13, // 不正な月
         overlay: []
@@ -40,16 +61,18 @@ describe('PDFService', () => {
   });
 
   describe('generatePreviewHtml', () => {
-    it('should generate preview HTML', async () => {
+    test('should generate preview HTML', async () => {
       const request: GeneratePDFRequest = {
+        template: 'calendar',
+        data: {
+          title: 'テストカレンダー'
+        },
         year: 2025,
         month: 2,
-        overlay: [
-          {
-            days: [1, 15],
-            type: 'circle'
-          }
-        ]
+        overlay: [{
+          type: 'circle',
+          days: [1, 15]
+        }]
       };
 
       const html = await service.generatePreviewHtml(request);
@@ -59,8 +82,12 @@ describe('PDFService', () => {
       expect(html).toContain('2025年2月');
     }, 30000); // タイムアウトを30秒に延長
 
-    it('should handle errors gracefully', async () => {
+    test('should handle errors gracefully', async () => {
       const request: GeneratePDFRequest = {
+        template: 'calendar',
+        data: {
+          title: 'エラーカレンダー'
+        },
         year: -1, // 不正な年
         month: 13, // 不正な月
         overlay: []

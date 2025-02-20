@@ -88,7 +88,9 @@ describe('Webhook Routes', () => {
           description: 'テスト用テンプレート'
         }
       ];
-      (PDFService.prototype.listTemplates as jest.Mock).mockReturnValue(mockTemplates);
+      
+      // テンプレート一覧の取得をモック
+      jest.spyOn(PDFService.prototype, 'getTemplates').mockReturnValue(mockTemplates);
 
       const response = await request(app)
         .post('/webhook/appsheet')

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 20px;
+        }
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0;
+        }
+        .subtitle {
+            font-size: 16px;
+            color: #666;
+            margin: 10px 0;
+        }
+        .date {
+            font-size: 14px;
+            color: #999;
+        }
+        .content {
+            margin: 20px 0;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        .data-table th,
+        .data-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .data-table th {
+            background-color: #f5f5f5;
+        }
+        .data-table tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 class="title">{{ title }}</h1>
+        <div class="subtitle">{{ subtitle }}</div>
+        <div class="date">作成日: {{ date }}</div>
+    </div>
+
+    <div class="content">
+        <!-- 概要セクション -->
+        <div class="section">
+            <h2 class="section-title">概要</h2>
+            <p>{{ summary }}</p>
+        </div>
+
+        <!-- データテーブル -->
+        {{#if items}}
+        <div class="section">
+            <h2 class="section-title">データ一覧</h2>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        {{#each tableHeaders}}
+                        <th>{{ this }}</th>
+                        {{/each}}
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each items}}
+                    <tr>
+                        {{#each this}}
+                        <td>{{ this }}</td>
+                        {{/each}}
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
+        {{/if}}
+
+        <!-- 備考セクション -->
+        {{#if notes}}
+        <div class="section">
+            <h2 class="section-title">備考</h2>
+            <p>{{ notes }}</p>
+        </div>
+        {{/if}}
+    </div>
+
+    <div class="footer">
+        <p>{{ footer }}</p>
+    </div>
+</body>
+</html>

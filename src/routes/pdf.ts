@@ -9,7 +9,7 @@ const router = Router();
 const pdfService = new PDFService();
 const driveService = new DriveService();
 
-// 認証、入力検証、レート制限を適用
+// 認証ミドルウェアを適用
 router.use(validateAppSheetRequest);
 router.use(sanitizeInput);
 router.use(rateLimiter);
@@ -56,18 +56,6 @@ router.post('/preview', validatePDFRequest, async (req, res, next) => {
     const html = await pdfService.generatePreviewHtml(request);
 
     res.send(html);
-  } catch (error) {
-    next(error);
-  }
-});
-
-/**
- * テンプレート一覧の取得
- */
-router.get('/templates', async (req, res, next) => {
-  try {
-    const templates = pdfService.listTemplates();
-    res.json(templates);
   } catch (error) {
     next(error);
   }
