@@ -143,11 +143,17 @@
 ## MVPリリースに向けた優先タスク（2025-02-20現在）
 
 ### 即時対応（〜2/21）
-- [ ] TypeScript型エラーの修正
-  - [ ] GeneratePDFRequestインターフェースの修正
-  - [ ] middleware/の型エラー解消
-  - [ ] services/の型エラー解消
-  - [ ] テストコードの型エラー解消
+- [x] TypeScript型エラーの修正
+  - [x] GeneratePDFRequestインターフェースの修正
+  - [x] middleware/の型エラー解消
+  - [x] services/の型エラー解消
+  - [x] テストコードの型エラー解消
+  
+  【引き継ぎ内容】
+  - `src/types/api.ts`: リクエスト型とエラーレスポンス型を定義
+  - `src/types/drive.ts`: Drive API関連のエラー型を定義
+  - `src/middleware/auth.ts`: ユーザー情報の型を追加
+  - エラー処理は最小限の実装に留めています
 
 - [ ] 最小機能セットの動作確認
   - [ ] カレンダー生成機能の基本動作確認
