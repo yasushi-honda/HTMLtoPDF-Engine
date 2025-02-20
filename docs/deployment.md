@@ -1,4 +1,4 @@
-# デプロイメントガイド
+# デプロイメントガイド（MVP版）
 
 ## 前提条件
 1. Google Cloud Platform（GCP）アカウント
@@ -17,10 +17,6 @@ cd dynamic-html-to-pdf
 
 # 依存パッケージのインストール
 npm install
-
-# 環境変数の設定
-cp .env.example .env
-# .envファイルを編集して必要な値を設定
 
 # ビルドとテスト
 npm run build
@@ -41,15 +37,20 @@ gcloud services enable drive.googleapis.com
 gcloud services enable iam.googleapis.com
 ```
 
-### 3. Dockerイメージのビルドとプッシュ
+### 3. Workload Identity設定
 
 ```bash
-# Dockerイメージのビルド
-docker build -t gcr.io/$PROJECT_ID/pdf-generator .
+# サービスアカウントの作成
+gcloud iam service-accounts create pdf-generator \
+    --display-name="PDF Generator Service Account"
 
-# イメージのプッシュ
-gcloud auth configure-docker
-docker push gcr.io/$PROJECT_ID/pdf-generator
+# サービスアカウントのメールアドレス
+export SA_EMAIL=pdf-generator@htmltopdf-engine.iam.gserviceaccount.com
+
+# Drive API アクセス権限
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="serviceAccount:${SA_EMAIL}" \
+    --role="roles/drive.file"
 ```
 
 ### 4. Cloud Runへのデプロイ
@@ -57,26 +58,14 @@ docker push gcr.io/$PROJECT_ID/pdf-generator
 ```bash
 # サービスのデプロイ
 gcloud run deploy pdf-generator \
-  --image gcr.io/$PROJECT_ID/pdf-generator \
-  --platform managed \
+  --source . \
   --region asia-northeast1 \
-  --allow-unauthenticated \
-  --memory 1Gi \
-  --timeout 300 \
-  --set-env-vars="NODE_ENV=production,ALLOWED_ORIGINS=https://your-app.com"
+  --platform managed \
+  --service-account=$SA_EMAIL \
+  --allow-unauthenticated
 ```
 
-### 5. 環境変数の設定
-
-Cloud Runコンソールで以下の環境変数を設定：
-
-| 変数名 | 説明 | 例 |
-|--------|------|-----|
-| NODE_ENV | 実行環境 | production |
-| ALLOWED_ORIGINS | CORS許可オリジン | https://your-app.com |
-| DRIVE_OUTPUT_FOLDER_ID | デフォルトの出力フォルダID | folder_id |
-
-### 6. 動作確認
+### 5. 動作確認
 
 ```bash
 # サービスURLの取得
@@ -97,67 +86,25 @@ curl -X POST $SERVICE_URL/api/pdf/generate \
   }'
 ```
 
-## スケーリング設定
+## トラブルシューティング
 
-### 1. 自動スケーリング
+### よくあるエラー
 
-```bash
-# 最小インスタンス数の設定
-gcloud run services update pdf-generator \
-  --min-instances 1 \
-  --max-instances 10
+1. **ビルドエラー**
+   - 原因: TypeScriptの型エラー
+   - 対処: `src/types/`内の型定義を確認
 
-# 同時リクエスト数の制限
-gcloud run services update pdf-generator \
-  --concurrency 50
-```
+2. **デプロイエラー**
+   - 原因: 権限不足
+   - 対処: サービスアカウントの権限を確認
 
-### 2. リソース制限
-
-```bash
-# メモリとCPUの設定
-gcloud run services update pdf-generator \
-  --memory 1Gi \
-  --cpu 1
-```
-
-## モニタリングの設定
-
-1. Cloud Monitoringでアラートの設定
-   - エラーレート
-   - レイテンシー
-   - メモリ使用率
-
-2. Cloud Loggingでログの設定
-   - エラーログの保存
-   - アクセスログの保存
-
-## バックアップとリカバリ
-
-1. 定期的なバックアップ
-   - Dockerイメージのバージョン管理
-   - 設定のバージョン管理
-
-2. リカバリ手順
-   - 前バージョンへのロールバック手順
-   - 障害時の対応手順
-
-## セキュリティ設定
-
-1. Cloud Run
-   - IAMポリシーの設定
-   - VPCコネクタの設定（必要な場合）
-
-2. ネットワーク
-   - Cloud Armorの設定
-   - SSLの設定
+3. **実行時エラー**
+   - 原因: Google Drive APIの権限
+   - 対処: IAMの設定を確認
 
 ## 本番環境チェックリスト
 
-- [ ] すべてのテストが成功
-- [ ] セキュリティスキャンの実施
-- [ ] パフォーマンステストの実施
-- [ ] モニタリングの設定完了
-- [ ] バックアップ手順の確認
-- [ ] ドキュメントの更新
-- [ ] 緊急連絡先の設定
+- [ ] ビルドが成功する
+- [ ] 基本的なテストが成功する
+- [ ] Workload Identity設定が完了
+- [ ] AppSheetから接続できる
