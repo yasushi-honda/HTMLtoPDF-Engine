@@ -41,6 +41,8 @@ export interface GeneratePDFResponse {
  * エラーレスポンス
  */
 export interface ErrorResponse {
+  /** ステータス */
+  status: 'error';
   /** エラーコード */
   code: string;
   /** エラーメッセージ */
