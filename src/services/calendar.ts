@@ -36,9 +36,17 @@ export class CalendarService {
     const rows: string[] = [];
     let currentRow: string[] = [];
 
+    // 月の最初の日の曜日を取得（0: 日曜日, 6: 土曜日）
+    const firstDayOfMonth = new Date(options.year, options.month - 1, 1).getDay();
+    
+    // 月初めの空セルを追加
+    for (let i = 0; i < firstDayOfMonth; i++) {
+      currentRow.push('<td></td>');
+    }
+
     days.forEach((day, index) => {
       currentRow.push(this.generateDayCell(day));
-      if ((index + 1) % 7 === 0 || index === days.length - 1) {
+      if ((index + firstDayOfMonth + 1) % 7 === 0 || index === days.length - 1) {
         // 週の最後または月の最後
         while (currentRow.length < 7) {
           currentRow.push('<td></td>'); // 空セルで埋める
@@ -47,6 +55,14 @@ export class CalendarService {
         currentRow = [];
       }
     });
+
+    // 最後の行が不完全な場合、空セルで埋める
+    if (currentRow.length > 0) {
+      while (currentRow.length < 7) {
+        currentRow.push('<td></td>');
+      }
+      rows.push(`<tr>${currentRow.join('')}</tr>`);
+    }
 
     return `<table class="exact-calendar">
       ${rows.join('\n')}
