@@ -1,91 +1,60 @@
 import puppeteer from 'puppeteer';
-import { PDFOptions, PDFResult } from '../types/pdf';
+import { GeneratePDFRequest } from '../types/api';
+import { CalendarGenerator } from './calendar';
 
 /**
  * PDF生成サービス
  */
 export class PDFService {
+  private calendarGenerator: CalendarGenerator;
+
+  constructor() {
+    this.calendarGenerator = new CalendarGenerator();
+  }
+
   /**
-   * HTMLからPDFを生成
-   * @param options PDF生成オプション
-   * @returns 生成されたPDFの情報
+   * PDFの生成
    */
-  public async generatePDF(options: PDFOptions): Promise<PDFResult> {
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
-
+  public async generatePDF(request: GeneratePDFRequest): Promise<Buffer> {
     try {
+      // カレンダーHTMLの生成
+      const html = await this.calendarGenerator.generateHTML(request);
+
+      // PDFの生成
+      const browser = await puppeteer.launch({
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      });
       const page = await browser.newPage();
-
-      // HTMLコンテンツを設定
-      await page.setContent(options.html, {
-        waitUntil: 'networkidle0'
-      });
-
-      // デフォルトのPDF設定
-      const defaultConfig = {
+      await page.setContent(html);
+      const pdf = await page.pdf({
         format: 'A4',
+        landscape: true,
+        printBackground: true,
         margin: {
-          top: '20mm',
-          right: '20mm',
-          bottom: '20mm',
-          left: '20mm'
-        },
-        orientation: 'portrait' as const
-      };
-
-      // ユーザー設定とデフォルト設定をマージ
-      const pageConfig = {
-        ...defaultConfig,
-        ...options.pageConfig,
-        margin: {
-          ...defaultConfig.margin,
-          ...options.pageConfig?.margin
+          top: '1cm',
+          right: '1cm',
+          bottom: '1cm',
+          left: '1cm'
         }
-      };
-
-      // PDFを生成
-      const pdfBuffer = await page.pdf({
-        format: pageConfig.format as any,
-        margin: pageConfig.margin,
-        landscape: pageConfig.orientation === 'landscape',
-        printBackground: true
       });
-
-      return {
-        buffer: Buffer.from(pdfBuffer),
-        filename: options.filename,
-        timestamp: new Date()
-      };
-    } finally {
       await browser.close();
+
+      return Buffer.from(pdf);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`PDF generation failed: ${errorMessage}`);
     }
   }
 
   /**
-   * PDFのプレビューHTMLを生成
-   * @param options PDF生成オプション
-   * @returns プレビュー用のHTML
+   * プレビューHTMLの生成
    */
-  public async generatePreviewHTML(options: PDFOptions): Promise<string> {
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
-
+  public async generatePreviewHtml(request: GeneratePDFRequest): Promise<string> {
     try {
-      const page = await browser.newPage();
-      await page.setContent(options.html, {
-        waitUntil: 'networkidle0'
-      });
-
-      // スタイルを適用した後のHTMLを取得
-      const finalHTML = await page.content();
-      return finalHTML;
-    } finally {
-      await browser.close();
+      return await this.calendarGenerator.generateHTML(request);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Preview generation failed: ${errorMessage}`);
     }
   }
 }

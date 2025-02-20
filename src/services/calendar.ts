@@ -1,97 +1,172 @@
-import { CalendarOptions, CalendarDay, Overlay, OverlayType } from '../types/calendar';
+import { GeneratePDFRequest } from '../types/api';
 
 /**
  * カレンダー生成サービス
  */
-export class CalendarService {
+export class CalendarGenerator {
   /**
-   * 指定された年月のカレンダー情報を生成
-   * @param options カレンダー生成オプション
-   * @returns カレンダーの日付情報配列
+   * カレンダーHTMLの生成
    */
-  public generateCalendarDays(options: CalendarOptions): CalendarDay[] {
-    const { year, month, overlay } = options;
+  public async generateHTML(request: GeneratePDFRequest): Promise<string> {
+    const { year, month, overlay } = request;
     const daysInMonth = new Date(year, month, 0).getDate();
-    const days: CalendarDay[] = [];
-
-    for (let day = 1; day <= daysInMonth; day++) {
-      const overlayType = this.getOverlayType(day, overlay);
-      days.push({
-        day,
-        overlayType,
-        className: this.generateClassName(day, overlayType),
-      });
-    }
-
-    return days;
-  }
-
-  /**
-   * カレンダーのHTMLを生成
-   * @param options カレンダー生成オプション
-   * @returns HTML文字列
-   */
-  public generateCalendarHTML(options: CalendarOptions): string {
-    const days = this.generateCalendarDays(options);
-    const rows: string[] = [];
-    let currentRow: string[] = [];
-
-    // 月の最初の日の曜日を取得（0: 日曜日, 6: 土曜日）
-    const firstDayOfMonth = new Date(options.year, options.month - 1, 1).getDay();
+    const firstDayOfMonth = new Date(year, month - 1, 1).getDay();
     
-    // 月初めの空セルを追加
-    for (let i = 0; i < firstDayOfMonth; i++) {
-      currentRow.push('<td></td>');
+    // カレンダーのHTMLを生成
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Calendar ${year}/${month}</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              margin: 0;
+              padding: 20px;
+            }
+            .calendar {
+              width: 100%;
+              border-collapse: collapse;
+            }
+            .calendar th {
+              background: #f0f0f0;
+              padding: 10px;
+              text-align: center;
+              border: 1px solid #ddd;
+            }
+            .calendar td {
+              width: 14.28%;
+              height: 100px;
+              border: 1px solid #ddd;
+              vertical-align: top;
+              padding: 5px;
+              position: relative;
+            }
+            .date {
+              font-size: 1.2em;
+              font-weight: bold;
+              margin-bottom: 5px;
+            }
+            .circle {
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              width: 40px;
+              height: 40px;
+              border: 2px solid red;
+              border-radius: 50%;
+            }
+            .triangle {
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              width: 0;
+              height: 0;
+              border-left: 20px solid transparent;
+              border-right: 20px solid transparent;
+              border-bottom: 40px solid blue;
+            }
+            .cross {
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              color: green;
+              font-size: 40px;
+            }
+            .diamond {
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%) rotate(45deg);
+              width: 30px;
+              height: 30px;
+              background: purple;
+            }
+          </style>
+        </head>
+        <body>
+          <h1>${year}年${month}月</h1>
+          <table class="calendar">
+            <tr>
+              <th>日</th>
+              <th>月</th>
+              <th>火</th>
+              <th>水</th>
+              <th>木</th>
+              <th>金</th>
+              <th>土</th>
+            </tr>
+            ${this.generateCalendarBody(firstDayOfMonth, daysInMonth, overlay)}
+          </table>
+        </body>
+      </html>
+    `;
+
+    return html;
+  }
+
+  /**
+   * カレンダー本体の生成
+   */
+  private generateCalendarBody(firstDay: number, daysInMonth: number, overlay: { days: number[]; type: string; }[]): string {
+    let html = '';
+    let day = 1;
+    let currentWeek = '';
+
+    // 最初の週の空白を埋める
+    for (let i = 0; i < firstDay; i++) {
+      currentWeek += '<td></td>';
     }
 
-    days.forEach((day, index) => {
-      currentRow.push(this.generateDayCell(day));
-      if ((index + firstDayOfMonth + 1) % 7 === 0 || index === days.length - 1) {
-        // 週の最後または月の最後
-        while (currentRow.length < 7) {
-          currentRow.push('<td></td>'); // 空セルで埋める
-        }
-        rows.push(`<tr>${currentRow.join('')}</tr>`);
-        currentRow = [];
+    // 日付を埋める
+    while (day <= daysInMonth) {
+      if ((firstDay + day - 1) % 7 === 0 && day !== 1) {
+        html += '<tr>' + currentWeek + '</tr>';
+        currentWeek = '';
       }
-    });
 
-    // 最後の行が不完全な場合、空セルで埋める
-    if (currentRow.length > 0) {
-      while (currentRow.length < 7) {
-        currentRow.push('<td></td>');
-      }
-      rows.push(`<tr>${currentRow.join('')}</tr>`);
+      const overlayItem = overlay.find(item => item.days.includes(day));
+      const overlayMark = overlayItem ? this.getOverlayMark(overlayItem.type) : '';
+
+      currentWeek += `
+        <td>
+          <div class="date">${day}</div>
+          ${overlayMark}
+        </td>
+      `;
+
+      day++;
     }
 
-    return `<table class="exact-calendar">
-      ${rows.join('\n')}
-    </table>`;
-  }
-
-  /**
-   * 指定された日付に適用するオーバーレイタイプを取得
-   */
-  private getOverlayType(day: number, overlay: Overlay[]): OverlayType | undefined {
-    const matchingOverlay = overlay.find((o) => o.days.includes(day));
-    return matchingOverlay?.type;
-  }
-
-  /**
-   * 日付セルのCSSクラス名を生成
-   */
-  private generateClassName(day: number, overlayType?: OverlayType): string {
-    const classes = ['day'];
-    if (overlayType) {
-      classes.push(overlayType);
+    // 最後の週の空白を埋める
+    const remainingCells = 7 - currentWeek.split('</td>').length + 1;
+    for (let i = 0; i < remainingCells; i++) {
+      currentWeek += '<td></td>';
     }
-    return classes.join(' ');
+    html += '<tr>' + currentWeek + '</tr>';
+
+    return html;
   }
 
   /**
-   * 日付セルのHTML要素を生成
+   * オーバーレイマークの取得
    */
-  private generateDayCell(day: CalendarDay): string {
-    return `<td class="${day.className}">${day.day}</td>`;
+  private getOverlayMark(type: string): string {
+    switch (type) {
+      case 'circle':
+        return '<div class="circle"></div>';
+      case 'triangle':
+        return '<div class="triangle"></div>';
+      case 'cross':
+        return '<div class="cross">×</div>';
+      case 'diamond':
+        return '<div class="diamond"></div>';
+      default:
+        return '';
+    }
   }
 }

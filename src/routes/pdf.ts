@@ -1,14 +1,18 @@
 import { Router } from 'express';
-import { CalendarService } from '../services/calendar';
 import { PDFService } from '../services/pdf';
 import { DriveService } from '../services/drive';
 import { validatePDFRequest } from '../middleware/validation';
+import { validateAppSheetRequest, sanitizeInput, rateLimiter } from '../middleware/auth';
 import { GeneratePDFRequest, GeneratePDFResponse } from '../types/api';
 
 const router = Router();
-const calendarService = new CalendarService();
 const pdfService = new PDFService();
 const driveService = new DriveService();
+
+// 認証、入力検証、レート制限を適用
+router.use(validateAppSheetRequest);
+router.use(sanitizeInput);
+router.use(rateLimiter);
 
 /**
  * PDF生成エンドポイント
@@ -16,41 +20,26 @@ const driveService = new DriveService();
 router.post('/generate', validatePDFRequest, async (req, res, next) => {
   try {
     const request = req.body as GeneratePDFRequest;
-
-    // カレンダーHTMLの生成
-    const calendarHtml = calendarService.generateCalendarHTML(
-      request.year,
-      request.month,
-      request.overlay
-    );
-
+    
     // PDFの生成
-    const pdfResult = await pdfService.generatePDF({
-      html: calendarHtml,
-      filename: request.filename || `calendar-${request.year}-${request.month}.pdf`
-    });
+    const pdf = await pdfService.generatePDF(request);
 
-    // Google Driveへのアップロード
+    // Google Driveにアップロード
     const uploadResult = await driveService.uploadFile({
-      buffer: pdfResult.buffer,
-      filename: pdfResult.filename,
+      buffer: pdf,
+      filename: request.filename || `calendar-${request.year}-${request.month}.pdf`,
       mimeType: 'application/pdf',
-      folderId: request.outputFolderId,
-      description: request.description
+      description: request.description,
+      folderId: request.outputFolderId
     });
 
-    // ファイルを共有可能に設定
-    await driveService.updateFilePermissions(uploadResult.fileId, 'reader');
-
-    // レスポンスの作成
     const response: GeneratePDFResponse = {
       fileId: uploadResult.fileId,
       webViewLink: uploadResult.webViewLink,
-      filename: uploadResult.filename,
-      generatedAt: uploadResult.uploadedAt.toISOString()
+      filename: uploadResult.filename
     };
 
-    res.status(200).json(response);
+    res.json(response);
   } catch (error) {
     next(error);
   }
@@ -62,21 +51,23 @@ router.post('/generate', validatePDFRequest, async (req, res, next) => {
 router.post('/preview', validatePDFRequest, async (req, res, next) => {
   try {
     const request = req.body as GeneratePDFRequest;
-
-    // カレンダーHTMLの生成
-    const calendarHtml = calendarService.generateCalendarHTML(
-      request.year,
-      request.month,
-      request.overlay
-    );
-
+    
     // プレビューHTMLの生成
-    const previewHtml = await pdfService.generatePreviewHTML({
-      html: calendarHtml,
-      filename: request.filename || `calendar-${request.year}-${request.month}.pdf`
-    });
+    const html = await pdfService.generatePreviewHtml(request);
 
-    res.status(200).send(previewHtml);
+    res.send(html);
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * テンプレート一覧の取得
+ */
+router.get('/templates', async (req, res, next) => {
+  try {
+    const templates = pdfService.listTemplates();
+    res.json(templates);
   } catch (error) {
     next(error);
   }
