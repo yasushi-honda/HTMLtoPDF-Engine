@@ -1,0 +1,23 @@
+# デフォルト設定
+app:
+  name: HTMLtoPDF-Engine
+  version: 1.0.0
+
+pdf:
+  output:
+    directory: ./output
+    format: A4
+    margin: 10mm
+    dpi: 300
+  
+test:
+  timeout: 30000  # WSL環境での推奨値
+  memory:
+    limit: 512mb
+  options:
+    runInBand: true
+    detectOpenHandles: true
+
+logging:
+  level: info
+  format: json
