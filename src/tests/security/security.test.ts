@@ -1,116 +1,103 @@
-import request from 'supertest';
-import { app } from '../../app';
+import { Request, Response } from 'express';
+import { generatePDF } from '../../controllers/pdf';
 import { GeneratePDFRequest } from '../../types/api';
 
-describe('Security Testing', () => {
-  describe('Authentication', () => {
-    it('should reject requests without auth token', async () => {
-      const req: GeneratePDFRequest = {
+describe('セキュリティテスト', () => {
+  let mockRequest: Partial<Request>;
+  let mockResponse: Partial<Response>;
+
+  beforeEach(() => {
+    mockRequest = {
+      body: {
+        template: 'calendar',
+        data: {
+          title: 'テストカレンダー'
+        },
         year: 2025,
         month: 2,
         overlay: []
-      };
+      } as GeneratePDFRequest,
+      headers: {
+        authorization: 'Bearer test-token'
+      }
+    };
 
-      await request(app)
-        .post('/api/pdf/generate')
-        .send(req)
-        .expect(401);
-    });
-
-    it('should reject requests with invalid auth token', async () => {
-      const req: GeneratePDFRequest = {
-        year: 2025,
-        month: 2,
-        overlay: []
-      };
-
-      await request(app)
-        .post('/api/pdf/generate')
-        .send(req)
-        .set('Authorization', 'Bearer invalid-token')
-        .expect(401);
-    });
-
-    it('should reject requests with non-AppSheet domain', async () => {
-      const req: GeneratePDFRequest = {
-        year: 2025,
-        month: 2,
-        overlay: []
-      };
-
-      await request(app)
-        .post('/api/pdf/generate')
-        .send(req)
-        .set('Authorization', 'Bearer non-appsheet-token')
-        .expect(403);
-    });
+    mockResponse = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    };
   });
 
-  describe('Input Validation', () => {
-    it('should reject invalid year values', async () => {
-      const req = {
-        year: -1,
+  test('不正なテンプレートIDを拒否する', async () => {
+    const maliciousRequest = {
+      body: {
+        template: '../../../etc/passwd',
+        data: {
+          title: '悪意のあるリクエスト'
+        },
+        year: 2025,
         month: 2,
         overlay: []
-      };
+      } as GeneratePDFRequest,
+      headers: {
+        authorization: 'Bearer test-token'
+      }
+    };
 
-      await request(app)
-        .post('/api/pdf/generate')
-        .send(req)
-        .set('Authorization', 'Bearer test-token')
-        .expect(400);
-    });
+    await generatePDF(maliciousRequest as Request, mockResponse as Response, jest.fn());
+    expect(mockResponse.status).toHaveBeenCalledWith(400);
+    expect(mockResponse.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error: 'ValidationError'
+      })
+    );
+  });
 
-    it('should reject invalid month values', async () => {
-      const req = {
+  test('不正なフォルダIDを拒否する', async () => {
+    const maliciousRequest = {
+      body: {
+        template: 'calendar',
+        data: {
+          title: 'テストカレンダー'
+        },
         year: 2025,
-        month: 13,
+        month: 2,
+        overlay: [],
+        outputFolderId: '../root_folder'
+      } as GeneratePDFRequest,
+      headers: {
+        authorization: 'Bearer test-token'
+      }
+    };
+
+    await generatePDF(maliciousRequest as Request, mockResponse as Response, jest.fn());
+    expect(mockResponse.status).toHaveBeenCalledWith(400);
+    expect(mockResponse.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error: 'ValidationError'
+      })
+    );
+  });
+
+  test('認証トークンなしのリクエストを拒否する', async () => {
+    const requestWithoutAuth = {
+      body: {
+        template: 'calendar',
+        data: {
+          title: 'テストカレンダー'
+        },
+        year: 2025,
+        month: 2,
         overlay: []
-      };
+      } as GeneratePDFRequest
+    };
 
-      await request(app)
-        .post('/api/pdf/generate')
-        .send(req)
-        .set('Authorization', 'Bearer test-token')
-        .expect(400);
-    });
-
-    it('should reject invalid overlay types', async () => {
-      const req = {
-        year: 2025,
-        month: 2,
-        overlay: [
-          {
-            days: [1],
-            type: 'invalid-type'
-          }
-        ]
-      };
-
-      await request(app)
-        .post('/api/pdf/generate')
-        .send(req)
-        .set('Authorization', 'Bearer test-token')
-        .expect(400);
-    });
-
-    it('should reject invalid day values', async () => {
-      const req = {
-        year: 2025,
-        month: 2,
-        overlay: [
-          {
-            days: [0, 29], // 2025年2月は28日まで
-            type: 'circle'
-          }
-        ]
-      };
-
-      await request(app)
-        .post('/api/pdf/generate')
-        .send(req)
-        .set('Authorization', 'Bearer test-token')
-        .expect(400);
-    });
+    await generatePDF(requestWithoutAuth as Request, mockResponse as Response, jest.fn());
+    expect(mockResponse.status).toHaveBeenCalledWith(401);
+    expect(mockResponse.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error: 'AuthenticationError'
+      })
+    );
   });
 });

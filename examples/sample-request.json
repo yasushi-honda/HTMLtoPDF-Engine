@@ -1,0 +1,10 @@
+{
+  "template": "basic",
+  "data": {
+    "title": "サンプルドキュメント",
+    "date": "2025年2月22日",
+    "content": "<h2>概要</h2><p>これはサンプルコンテンツです。</p><h2>詳細</h2><p>動的なHTMLからPDFを生成するデモンストレーションです。</p>",
+    "documentId": "DEMO-001"
+  },
+  "filename": "sample-output.pdf"
+}

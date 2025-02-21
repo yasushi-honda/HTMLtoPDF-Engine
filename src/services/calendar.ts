@@ -55,61 +55,64 @@ export class CalendarGenerator {
         border-collapse: collapse;
       }
       .calendar th {
-        background: #f0f0f0;
         padding: 10px;
         text-align: center;
-        border: 1px solid #ddd;
+        background-color: #f5f5f5;
       }
       .calendar td {
         width: 14.28%;
-        height: 100px;
+        padding: 10px;
+        text-align: center;
         border: 1px solid #ddd;
-        vertical-align: top;
-        padding: 5px;
         position: relative;
+        height: 80px;
+        vertical-align: top;
       }
-      .date {
+      .calendar-date {
+        position: relative;
+        z-index: 2;
         font-size: 1.2em;
-        font-weight: bold;
-        margin-bottom: 5px;
       }
-      .circle {
+      .calendar-overlay {
         position: absolute;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
+        z-index: 1;
         width: 40px;
         height: 40px;
-        border: 2px solid red;
+      }
+      .overlay-circle {
+        border: 2px solid #ff0000;
         border-radius: 50%;
       }
-      .triangle {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
+      .overlay-triangle {
         width: 0;
         height: 0;
         border-left: 20px solid transparent;
         border-right: 20px solid transparent;
-        border-bottom: 40px solid blue;
+        border-bottom: 34.6px solid #00ff00;
+        background: transparent;
       }
-      .cross {
+      .overlay-cross::before,
+      .overlay-cross::after {
+        content: '';
         position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        color: green;
-        font-size: 40px;
-      }
-      .diamond {
-        position: absolute;
+        background: #0000ff;
+        width: 2px;
+        height: 40px;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%) rotate(45deg);
-        width: 30px;
-        height: 30px;
-        background: purple;
+      }
+      .overlay-cross::after {
+        transform: translate(-50%, -50%) rotate(-45deg);
+      }
+      .overlay-diamond {
+        transform: translate(-50%, -50%) rotate(45deg);
+        border: 2px solid #ff00ff;
+        width: 28px;
+        height: 28px;
       }
     `;
   }
@@ -118,79 +121,68 @@ export class CalendarGenerator {
    * カレンダーヘッダーの生成
    */
   private generateCalendarHeader(year: number, month: number): string {
+    const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
+    
     return `
-      <h1>${year}年${month}月</h1>
       <table class="calendar">
-        <tr>
-          <th>日</th>
-          <th>月</th>
-          <th>火</th>
-          <th>水</th>
-          <th>木</th>
-          <th>金</th>
-          <th>土</th>
-        </tr>
+        <thead>
+          <tr>
+            <th colspan="7">${year}年${month}月</th>
+          </tr>
+          <tr>
+            ${weekDays.map(day => `<th>${day}</th>`).join('')}
+          </tr>
+        </thead>
     `;
   }
 
   /**
    * カレンダー本体の生成
    */
-  private generateCalendarBody(firstDay: number, daysInMonth: number, overlay: { days: number[]; type: string; }[]): string {
-    let html = '';
+  private generateCalendarBody(firstDay: number, daysInMonth: number, overlays: Array<{type: string, days: number[]}>): string {
+    let html = '<tbody>';
     let day = 1;
-    let currentWeek = '';
+    let position = 0;
 
-    // 最初の週の空白を埋める
-    for (let i = 0; i < firstDay; i++) {
-      currentWeek += '<td></td>';
-    }
-
-    // 日付を埋める
     while (day <= daysInMonth) {
-      if ((firstDay + day - 1) % 7 === 0 && day !== 1) {
-        html += '<tr>' + currentWeek + '</tr>';
-        currentWeek = '';
+      html += '<tr>';
+      
+      for (let i = 0; i < 7; i++) {
+        if (position < firstDay || day > daysInMonth) {
+          html += '<td></td>';
+        } else {
+          const currentDay = day;
+          const dayOverlays = overlays.filter(o => o.days.includes(currentDay));
+          
+          html += `
+            <td>
+              <div class="calendar-date">${day}</div>
+              ${dayOverlays.map(o => this.generateOverlay(o.type)).join('')}
+            </td>
+          `;
+          day++;
+        }
+        position++;
       }
-
-      const overlayItem = overlay.find(item => item.days.includes(day));
-      const overlayMark = overlayItem ? this.getOverlayMark(overlayItem.type) : '';
-
-      currentWeek += `
-        <td>
-          <div class="date">${day}</div>
-          ${overlayMark}
-        </td>
-      `;
-
-      day++;
+      
+      html += '</tr>';
     }
 
-    // 最後の週の空白を埋める
-    const remainingCells = 7 - currentWeek.split('</td>').length + 1;
-    for (let i = 0; i < remainingCells; i++) {
-      currentWeek += '<td></td>';
-    }
-    html += '<tr>' + currentWeek + '</tr>';
-
-    return html + '</table>';
+    return html + '</tbody></table>';
   }
 
   /**
-   * オーバーレイマークの取得
+   * オーバーレイの生成
    */
-  private getOverlayMark(type: string): string {
-    switch (type) {
-      case 'circle':
-        return '<div class="circle"></div>';
-      case 'triangle':
-        return '<div class="triangle"></div>';
-      case 'cross':
-        return '<div class="cross">×</div>';
-      case 'diamond':
-        return '<div class="diamond"></div>';
-      default:
-        return '';
-    }
+  private generateOverlay(type: string): string {
+    const classMap = {
+      circle: 'overlay-circle',
+      triangle: 'overlay-triangle',
+      cross: 'overlay-cross',
+      diamond: 'overlay-diamond'
+    };
+
+    const overlayClass = classMap[type as keyof typeof classMap] || '';
+    return `<div class="calendar-overlay ${overlayClass}"></div>`;
   }
 }

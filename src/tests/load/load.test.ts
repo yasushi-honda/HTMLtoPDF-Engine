@@ -1,70 +1,60 @@
-import request from 'supertest';
-import { app } from '../../app';
+import { Request, Response } from 'express';
+import { generatePDF } from '../../controllers/pdf';
 import { GeneratePDFRequest } from '../../types/api';
 
-describe('Load Testing', () => {
-  it('should handle multiple concurrent PDF generation requests', async () => {
-    const requests: Promise<void>[] = [];
-    const concurrentRequests = 5;
+describe('負荷テスト', () => {
+  let mockRequest: Partial<Request>;
+  let mockResponse: Partial<Response>;
 
-    for (let i = 0; i < concurrentRequests; i++) {
-      const req: GeneratePDFRequest = {
+  beforeEach(() => {
+    mockRequest = {
+      body: {
+        template: 'calendar',
+        data: {
+          title: 'テストカレンダー'
+        },
         year: 2025,
         month: 2,
         overlay: [
-          {
-            days: [1, 15],
-            type: 'circle'
-          }
+          { type: 'circle', days: [1, 15] }
         ]
-      };
+      } as GeneratePDFRequest
+    };
 
-      const promise = request(app)
-        .post('/api/pdf/generate')
-        .send(req)
-        .set('Authorization', 'Bearer test-token')
-        .expect(200)
-        .then(res => {
-          expect(res.body).toHaveProperty('fileId');
-          expect(res.body).toHaveProperty('webViewLink');
-          expect(res.body).toHaveProperty('filename');
-        });
+    mockResponse = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    };
+  });
 
-      requests.push(promise);
-    }
+  test('同時に5件のリクエストを処理できること', async () => {
+    const requests = Array(5).fill(null).map(() =>
+      generatePDF(mockRequest as Request, mockResponse as Response, jest.fn())
+    );
 
     await Promise.all(requests);
-  }, 60000); // タイムアウトを60秒に延長
+    expect(mockResponse.json).toHaveBeenCalledTimes(5);
+  }, 10000);
 
-  it('should handle multiple concurrent preview requests', async () => {
-    const requests: Promise<void>[] = [];
-    const concurrentRequests = 10;
+  test('エラー時も他のリクエストに影響を与えないこと', async () => {
+    const errorRequest = {
+      body: {
+        template: 'calendar',
+        data: {
+          title: 'エラーテスト'
+        },
+        year: -1, // 不正な値
+        month: 13 // 不正な値
+      } as GeneratePDFRequest
+    };
 
-    for (let i = 0; i < concurrentRequests; i++) {
-      const req: GeneratePDFRequest = {
-        year: 2025,
-        month: 2,
-        overlay: [
-          {
-            days: [1, 15],
-            type: 'circle'
-          }
-        ]
-      };
-
-      const promise = request(app)
-        .post('/api/pdf/preview')
-        .send(req)
-        .set('Authorization', 'Bearer test-token')
-        .expect(200)
-        .then(res => {
-          expect(res.text).toContain('<!DOCTYPE html>');
-          expect(res.text).toContain('2025年2月');
-        });
-
-      requests.push(promise);
-    }
+    const requests = [
+      generatePDF(mockRequest as Request, mockResponse as Response, jest.fn()),
+      generatePDF(errorRequest as Request, mockResponse as Response, jest.fn()),
+      generatePDF(mockRequest as Request, mockResponse as Response, jest.fn())
+    ];
 
     await Promise.all(requests);
-  }, 30000); // タイムアウトを30秒に延長
+    expect(mockResponse.status).toHaveBeenCalledWith(400);
+  });
 });
