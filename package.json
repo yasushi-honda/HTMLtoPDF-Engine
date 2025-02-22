@@ -14,7 +14,8 @@
     "lint:fix": "eslint 'src/**/*.{js,ts}' --fix",
     "format": "prettier --write 'src/**/*.{js,ts}'",
     "test": "jest",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist",
+    "convert": "ts-node src/services/html-to-pdf.ts"
   },
   "keywords": [
     "pdf",
