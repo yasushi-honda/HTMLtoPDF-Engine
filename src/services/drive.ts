@@ -18,20 +18,14 @@ export class DriveService {
   /**
    * PDFファイルをアップロード
    */
-  public async uploadFile(
-    buffer: Buffer,
-    filename: string,
-    description?: string,
-    folderId?: string
-  ): Promise<DriveUploadResult> {
+  public async uploadFile(options: {
+    buffer: Buffer;
+    filename: string;
+    mimeType: string;
+    description?: string;
+    folderId?: string;
+  }): Promise<DriveUploadResult> {
     try {
-      const options: DriveUploadOptions = {
-        buffer,
-        filename,
-        mimeType: 'application/pdf',
-        description,
-        folderId
-      };
 
       const result = await this.uploadToGoogleDrive(options);
       return result;
@@ -80,6 +74,39 @@ export class DriveService {
       webViewLink: response.data.webViewLink,
       filename,
       uploadedAt: new Date()
+    };
+  }
+
+  /**
+   * ファイルの権限を更新
+   */
+  public async updateFilePermissions(fileId: string, role: 'reader' | 'writer' | 'owner'): Promise<void> {
+    await this.drive.permissions.create({
+      fileId,
+      requestBody: {
+        role,
+        type: 'anyone'
+      }
+    });
+  }
+
+  /**
+   * ファイル情報を取得
+   */
+  public async getFileInfo(fileId: string): Promise<{
+    id: string;
+    name: string;
+    webViewLink: string;
+  }> {
+    const response = await this.drive.files.get({
+      fileId,
+      fields: 'id, name, webViewLink'
+    });
+
+    return {
+      id: response.data.id!,
+      name: response.data.name!,
+      webViewLink: response.data.webViewLink!
     };
   }
 }
