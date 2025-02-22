@@ -252,113 +252,67 @@
         <tr>
           <th>訪問日</th>
           <td colspan="3">
-            <div class="calendar-row">
-              <div class="calendar">
-                <div class="calendar-header">
-                  <div>　　年　　月</div>
-                </div>
-                <!-- 文字色なしカレンダー -->
-                <table class="exact-calendar">
-                  <tr>
-                    <td>1</td>
-                    <td>2</td>
-                    <td>3</td>
-                    <td>4</td>
-                    <td>5</td>
-                    <td>6</td>
-                    <td>7</td>
-                  </tr>
-                  <tr>
-                    <td>8</td>
-                    <td>9</td>
-                    <td>10</td>
-                    <td>11</td>
-                    <td>12</td>
-                    <td>13</td>
-                    <td>14</td>
-                  </tr>
-                  <tr>
-                    <td>15</td>
-                    <td>16</td>
-                    <td>17</td>
-                    <td>18</td>
-                    <td>19</td>
-                    <td>20</td>
-                    <td>21</td>
-                  </tr>
-                  <tr>
-                    <td>22</td>
-                    <td>23</td>
-                    <td>24</td>
-                    <td>25</td>
-                    <td>26</td>
-                    <td>27</td>
-                    <td>28</td>
-                  </tr>
-                  <tr>
-                    <td>29</td>
-                    <td>30</td>
-                    <td>31</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                  </tr>
-                </table>
-              </div>
-              <div class="calendar">
-                <div class="calendar-header">
-                  <div>　　年　　月</div>
-                </div>
-                <!-- 文字色なしカレンダー -->
-                <table class="exact-calendar">
-                  <tr>
-                    <td>1</td>
-                    <td>2</td>
-                    <td>3</td>
-                    <td>4</td>
-                    <td>5</td>
-                    <td>6</td>
-                    <td>7</td>
-                  </tr>
-                  <tr>
-                    <td>8</td>
-                    <td>9</td>
-                    <td>10</td>
-                    <td>11</td>
-                    <td>12</td>
-                    <td>13</td>
-                    <td>14</td>
-                  </tr>
-                  <tr>
-                    <td>15</td>
-                    <td>16</td>
-                    <td>17</td>
-                    <td>18</td>
-                    <td>19</td>
-                    <td>20</td>
-                    <td>21</td>
-                  </tr>
-                  <tr>
-                    <td>22</td>
-                    <td>23</td>
-                    <td>24</td>
-                    <td>25</td>
-                    <td>26</td>
-                    <td>27</td>
-                    <td>28</td>
-                  </tr>
-                  <tr>
-                    <td>29</td>
-                    <td>30</td>
-                    <td>31</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                  </tr>
-                </table>
-              </div>
+            <div class="calendar-row" id="calendarContainer">
+              <script>
+                function generateCalendar(year, month) {
+                  const firstDay = new Date(year, month, 1);
+                  const lastDay = new Date(year, month + 1, 0);
+                  
+                  let calendarHtml = `
+                    <div class="calendar">
+                      <div class="calendar-header">
+                        <div>${year}年${month + 1}月</div>
+                      </div>
+                      <table class="exact-calendar">
+                        <tbody>
+                  `;
+                  
+                  // 月の最初の日の曜日を取得（0:日曜日 - 6:土曜日）
+                  const firstDayOfWeek = firstDay.getDay();
+                  let currentDay = 1;
+                  
+                  // カレンダーの行を生成
+                  while (currentDay <= lastDay.getDate()) {
+                    let weekHtml = '<tr>';
+                    
+                    // 1週間分の日付を生成
+                    for (let i = 0; i < 7; i++) {
+                      if ((currentDay === 1 && i < firstDayOfWeek) || currentDay > lastDay.getDate()) {
+                        // 月の開始前または終了後の空白セル
+                        weekHtml += '<td></td>';
+                      } else {
+                        weekHtml += `<td>${currentDay}</td>`;
+                        currentDay++;
+                      }
+                    }
+                    
+                    weekHtml += '</tr>';
+                    calendarHtml += weekHtml;
+                  }
+                  
+                  calendarHtml += `
+                        </tbody>
+                      </table>
+                    </div>
+                  `;
+                  
+                  return calendarHtml;
+                }
+        
+                // 現在の日付を取得
+                const today = new Date();
+                const currentYear = today.getFullYear();
+                const currentMonth = today.getMonth();
+                
+                // 翌月の計算
+                const nextMonth = currentMonth === 11 ? 0 : currentMonth + 1;
+                const nextYear = currentMonth === 11 ? currentYear + 1 : currentYear;
+                
+                // カレンダーを生成して表示
+                const container = document.getElementById('calendarContainer');
+                container.innerHTML = generateCalendar(currentYear, currentMonth) + 
+                                    generateCalendar(nextYear, nextMonth);
+              </script>
             </div>
             <div class="calendar-note">
               訪問日を〇で囲むこと。理学療法士、作業療法士又は言語聴覚士による<br />
@@ -368,7 +322,6 @@
             </div>
           </td>
         </tr>
-        <tr>
           <th>病状の経過</th>
           <td colspan="3" class="empty-space"></td>
         </tr>
