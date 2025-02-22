@@ -26,7 +26,7 @@ router.post('/appsheet', validateAppSheetRequest, sanitizeInput, async (req, res
       case 'generate_pdf': {
         // PDFの生成
         const pdf = await pdfService.generatePDF({
-          template: templateId,
+          templateId,
           data,
           ...options
         });
@@ -52,10 +52,11 @@ router.post('/appsheet', validateAppSheetRequest, sanitizeInput, async (req, res
 
       case 'preview': {
         // プレビューHTMLの生成
-        const html = await pdfService.generatePreviewHtml(
+        const html = await pdfService.generatePreviewHtml({
           templateId,
-          data
-        );
+          data,
+          ...options
+        });
 
         res.json({
           success: true,
@@ -66,17 +67,6 @@ router.post('/appsheet', validateAppSheetRequest, sanitizeInput, async (req, res
         break;
       }
 
-      case 'list_templates': {
-        // テンプレート一覧の取得
-        const templates = pdfService.getTemplates();
-        res.json({
-          success: true,
-          data: {
-            templates
-          }
-        });
-        break;
-      }
 
       default:
         res.status(400).json({

@@ -6,11 +6,13 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 
 interface PDFConfig {
-  output: {
-    directory: string;
-    format: string;
-    margin: string;
-    dpi: number;
+  pdf: {
+    output: {
+      directory: string;
+      format: string;
+      margin: string;
+      dpi: number;
+    };
   };
 }
 
@@ -20,7 +22,7 @@ interface PDFConfig {
 export class PDFService {
   private browser: Browser | null = null;
   private calendarGenerator: CalendarGenerator;
-  private config: PDFConfig;
+  private config!: PDFConfig;
 
   constructor() {
     this.calendarGenerator = new CalendarGenerator();
@@ -38,7 +40,7 @@ export class PDFService {
 
       this.browser = await launch({
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
-        headless: 'new'
+        headless: true
       });
     }
   }
@@ -59,21 +61,20 @@ export class PDFService {
 
       // 設定に基づいてPDFオプションを設定
       const pdfBuffer = await page.pdf({
-        format: this.config.output.format as 'A4',
+        format: this.config.pdf.output.format as 'A4',
         margin: {
-          top: this.config.output.margin,
-          right: this.config.output.margin,
-          bottom: this.config.output.margin,
-          left: this.config.output.margin
+          top: this.config.pdf.output.margin,
+          right: this.config.pdf.output.margin,
+          bottom: this.config.pdf.output.margin,
+          left: this.config.pdf.output.margin
         },
         printBackground: true,
-        scale: 1,
         // DPI設定（72がデフォルト）
-        scale: this.config.output.dpi / 72
+        scale: this.config.pdf.output.dpi / 72
       });
 
       await page.close();
-      return pdfBuffer;
+      return Buffer.from(pdfBuffer);
 
     } catch (error) {
       console.error('PDF生成エラー:', error);
@@ -101,5 +102,22 @@ export class PDFService {
       const errorMessage = error instanceof Error ? error.message : String(error);
       throw new Error(`Preview generation failed: ${errorMessage}`);
     }
+  }
+
+  /**
+   * 利用可能なテンプレート一覧を取得
+   */
+  public getTemplates(): Array<{
+    id: string;
+    name: string;
+    description: string;
+  }> {
+    return [
+      {
+        id: 'report',
+        name: 'レポート',
+        description: 'テスト用テンプレート'
+      }
+    ];
   }
 }
