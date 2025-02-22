@@ -83,14 +83,14 @@
 
 ## フェーズ2: 基本機能実装
 - [ ] 2.1 カレンダー生成機能
-  - [ ] generateCalendarHTML関数の実装
+  - [x] generateCalendarHTML関数の実装
   - [ ] オーバーレイ処理の実装（○、△、◇、×）
   - [ ] カレンダーのテストケース作成
 
 - [ ] 2.2 PDF生成機能
-  - [ ] puppeteerセットアップ
-  - [ ] HTML→PDF変換処理の実装
-  - [ ] PDFオプション設定（A4、マージン等）
+  - [x] puppeteerセットアップ
+  - [x] HTML→PDF変換処理の実装
+  - [x] PDFオプション設定（A4、マージン等）
   - [ ] エラーハンドリング実装
 
 - [ ] 2.3 Google Drive連携

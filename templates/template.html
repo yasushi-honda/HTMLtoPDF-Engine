@@ -6,7 +6,7 @@
     <style>
       @page {
         size: A4;
-        margin: 2mm 5mm 5mm 5mm; /* 上部のマージンのみ2mmに変更 */
+        margin: 2mm 5mm 5mm 5mm;
       }
 
       @media print {
@@ -20,7 +20,7 @@
 
         .container {
           border: none;
-          padding: 2mm 5mm 5mm 5mm; /* 上部のパディングのみ2mmに変更 */
+          padding: 2mm 5mm 5mm 5mm;
         }
       }
 
@@ -33,7 +33,7 @@
       .container {
         max-width: 210mm;
         margin: 0 auto;
-        padding: 5mm;
+        padding: 2mm;
         box-sizing: border-box;
       }
 
@@ -51,13 +51,13 @@
 
       h1 {
         font-size: 18pt;
-        margin: 5px 0;
+        margin: 2px 0;
       }
 
       table {
         width: 100%;
         border-collapse: collapse;
-        margin-bottom: 10px;
+        margin-bottom: 5px;
         page-break-inside: avoid;
       }
 
@@ -88,12 +88,11 @@
 
       .calendar-header {
         text-align: center;
-        margin-bottom: 5px;
+        margin-bottom: 2px;
         font-size: 10pt;
         width: 100%;
       }
 
-      /* 画像に合わせたカレンダー */
       .exact-calendar {
         width: auto;
         border-collapse: collapse;
@@ -103,10 +102,10 @@
       .exact-calendar td {
         text-align: center;
         padding: 1px 5px;
-        /* 横のパディングを増やして間隔調整 */
         font-size: 10pt;
         border: none;
         height: 18px;
+        position: relative;
       }
 
       .calendar-note {
@@ -114,14 +113,12 @@
         font-size: 9pt;
         line-height: 1.3;
         text-align: center;
-        /* 中央揃えに変更 */
       }
 
       .empty-space {
         height: 60px;
       }
 
-      /* フッター部分のスタイル */
       .footer-report-text {
         text-align: left;
         margin: 25px 0 15px 0;
@@ -147,75 +144,45 @@
       .right-cell {
         width: 50%;
         text-align: left;
-        /* 左揃えに変更 */
       }
 
       .stamp-area {
         text-align: right;
-        /* 印の部分だけ右揃え */
       }
 
-      /* ふりがな用のクラス（小さめフォント） */
       .furigana {
         font-size: 9pt;
         line-height: 1;
       }
 
-      /* 訪問記号のスタイル */
-      .circle {
+      .symbol {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 14pt;
+        pointer-events: none;
+      }
+
+      .date-text {
         position: relative;
-        display: inline-block;
+        z-index: 1;
       }
 
       .circle::before {
         content: '○';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 14pt;
-      }
-
-      .diamond {
-        position: relative;
-        display: inline-block;
-      }
-
-      .diamond::before {
-        content: '◇';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 14pt;
-      }
-
-      .triangle {
-        position: relative;
-        display: inline-block;
       }
 
       .triangle::before {
         content: '△';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 14pt;
-      }
-
-      .cross {
-        position: relative;
-        display: inline-block;
       }
 
       .cross::before {
         content: '×';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 14pt;
+      }
+
+      .diamond::before {
+        content: '◇';
       }
     </style>
   </head>
@@ -229,12 +196,9 @@
       <table>
         <tr>
           <th style="width: 20%">利用者氏名</th>
-          <!-- 高さを固定し、flex で上下を分割 -->
           <td style="width: 30%; height: 60px; vertical-align: top">
             <div style="display: flex; flex-direction: column; height: 100%">
-              <!-- 上部20% がふりがな -->
               <div style="flex: 0 0 20%" class="furigana">{{furigana}}</div>
-              <!-- 下部80% が利用者氏名 -->
               <div style="flex: 0 0 80%; display: flex; align-items: center">{{user_name}}</div>
             </div>
           </td>
@@ -257,61 +221,74 @@
                 function generateCalendar(year, month) {
                   const firstDay = new Date(year, month, 1);
                   const lastDay = new Date(year, month + 1, 0);
-                  
+
+                  const today = new Date();
+                  const todayYear = today.getFullYear();
+                  const todayMonth = today.getMonth();
+                  const todayDate = today.getDate();
+
                   let calendarHtml = `
-                    <div class="calendar">
-                      <div class="calendar-header">
-                        <div>${year}年${month + 1}月</div>
-                      </div>
-                      <table class="exact-calendar">
-                        <tbody>
-                  `;
-                  
-                  // 月の最初の日の曜日を取得（0:日曜日 - 6:土曜日）
+                  <div class="calendar">
+                    <div class="calendar-header">
+                      <div>${year}年${month + 1}月</div>
+                    </div>
+                    <table class="exact-calendar">
+                      <tbody>
+                `;
+
                   const firstDayOfWeek = firstDay.getDay();
                   let currentDay = 1;
-                  
-                  // カレンダーの行を生成
+
                   while (currentDay <= lastDay.getDate()) {
                     let weekHtml = '<tr>';
-                    
-                    // 1週間分の日付を生成
+
                     for (let i = 0; i < 7; i++) {
-                      if ((currentDay === 1 && i < firstDayOfWeek) || currentDay > lastDay.getDate()) {
-                        // 月の開始前または終了後の空白セル
+                      if (
+                        (currentDay === 1 && i < firstDayOfWeek) ||
+                        currentDay > lastDay.getDate()
+                      ) {
                         weekHtml += '<td></td>';
                       } else {
-                        weekHtml += `<td>${currentDay}</td>`;
+                        let symbol = '';
+                        if (year === todayYear && month === todayMonth) {
+                          if (currentDay === todayDate) {
+                            symbol = '<span class="symbol circle"></span>';
+                          } else if (currentDay === todayDate + 1) {
+                            symbol = '<span class="symbol triangle"></span>';
+                          } else if (currentDay === todayDate + 2) {
+                            symbol = '<span class="symbol cross"></span>';
+                          }
+                        }
+
+                        weekHtml += `<td><span class="date-text">${currentDay}</span>${symbol}</td>`;
                         currentDay++;
                       }
                     }
-                    
+
                     weekHtml += '</tr>';
                     calendarHtml += weekHtml;
                   }
-                  
+
                   calendarHtml += `
-                        </tbody>
-                      </table>
-                    </div>
-                  `;
-                  
+                      </tbody>
+                    </table>
+                  </div>
+                `;
+
                   return calendarHtml;
                 }
-        
-                // 現在の日付を取得
+
                 const today = new Date();
                 const currentYear = today.getFullYear();
                 const currentMonth = today.getMonth();
-                
-                // 翌月の計算
+
                 const nextMonth = currentMonth === 11 ? 0 : currentMonth + 1;
                 const nextYear = currentMonth === 11 ? currentYear + 1 : currentYear;
-                
-                // カレンダーを生成して表示
+
                 const container = document.getElementById('calendarContainer');
-                container.innerHTML = generateCalendar(currentYear, currentMonth) + 
-                                    generateCalendar(nextYear, nextMonth);
+                container.innerHTML =
+                  generateCalendar(currentYear, currentMonth) +
+                  generateCalendar(nextYear, nextMonth);
               </script>
             </div>
             <div class="calendar-note">
@@ -322,6 +299,7 @@
             </div>
           </td>
         </tr>
+        <tr>
           <th>病状の経過</th>
           <td colspan="3" class="empty-space"></td>
         </tr>
@@ -359,7 +337,6 @@
 
       <div class="footer-report-text">上記のとおり、指定訪問看護の実施について報告いたします。</div>
 
-      <!-- フッターテーブル -->
       <table class="footer-signature">
         <tr>
           <td class="left-cell">
