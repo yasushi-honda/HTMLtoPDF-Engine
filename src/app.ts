@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import pdfRoutes from './routes/pdf';
+import postsRoutes from './routes/posts';
 import { errorHandler } from './middleware/error';
 
 /**
@@ -25,6 +26,7 @@ export function createApp() {
 
   // ルートの設定
   app.use('/api/pdf', pdfRoutes);
+  app.use('/api/posts', postsRoutes);
 
   // エラーハンドリング
   app.use(errorHandler);

@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - '8080:8080'
+    environment:
+      # 開発時はNODE_ENV=developmentに変更することも可能です
+      - NODE_ENV=production
+      - PORT=8080
+    # ローカル開発用にソースコードをボリュームマウントしてホットリロードさせる場合は以下を有効化
+    # volumes:
+    #   - .:/app

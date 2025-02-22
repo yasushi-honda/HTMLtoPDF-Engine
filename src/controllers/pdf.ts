@@ -40,12 +40,13 @@ export async function generatePDF(
 
     // Google Driveへのアップロード
     try {
-      const uploadResult = await driveService.uploadFile(
-        pdf,
-        request.filename || `calendar-${request.year}-${request.month}.pdf`,
-        request.description,
-        request.outputFolderId
-      );
+      const uploadResult = await driveService.uploadFile({
+        buffer: pdf,
+        filename: request.filename || `calendar-${request.year}-${request.month}.pdf`,
+        mimeType: 'application/pdf',
+        description: request.description,
+        folderId: request.outputFolderId
+      });
 
       const response: GeneratePDFResponse = {
         fileId: uploadResult.fileId,
