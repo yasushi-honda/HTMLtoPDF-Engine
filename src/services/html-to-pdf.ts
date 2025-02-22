@@ -1,4 +1,4 @@
-import puppeteer from 'puppeteer';
+import * as puppeteer from 'puppeteer';
 import fs from 'fs';
 import path from 'path';
 
@@ -18,7 +18,12 @@ export class HtmlToPdfConverter {
   }
 
   private async readTemplate(): Promise<string> {
-    return fs.promises.readFile(this.templatePath, 'utf-8');
+    try {
+      return await fs.promises.readFile(this.templatePath, 'utf-8');
+    } catch (error) {
+      console.error(`Error reading template from ${this.templatePath}:`, error);
+      throw new Error(`Template読み込みエラー: ${error}`);
+    }
   }
 
   private replaceTemplateVariables(template: string, data: TemplateData): string {
@@ -54,24 +59,41 @@ export class HtmlToPdfConverter {
     `;
     modifiedTemplate = modifiedTemplate.replace('</style>', `${footerStyle}</style>`);
 
-    // 変数の置換
+    // 変数の置換（存在しない変数は空文字に）
     return modifiedTemplate.replace(/\{\{(\w+)\}\}/g, (match, key) => {
+      if (!(key in data)) {
+        console.warn(`テンプレート変数 ${key} が見つかりませんでした。空文字に置換します。`);
+      }
       return data[key] || '';
     });
   }
 
   async convertToPdf(data: TemplateData, outputPath: string): Promise<void> {
+    let browser: puppeteer.Browser | undefined;
+    const tempHtmlPath = path.join(path.dirname(outputPath), '_temp.html');
+
     try {
       const template = await this.readTemplate();
       const htmlContent = this.replaceTemplateVariables(template, data);
 
-      const tempHtmlPath = path.join(path.dirname(outputPath), '_temp.html');
-      await fs.promises.writeFile(tempHtmlPath, htmlContent);
+      // テンプレートの書き込み
+      try {
+        await fs.promises.writeFile(tempHtmlPath, htmlContent);
+      } catch (error) {
+        console.error('テンプレートファイルの書き込みエラー:', error);
+        throw new Error(`テンプレート書き込みエラー: ${error}`);
+      }
 
-      const browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      });
+      // Puppeteerの起動
+      try {
+        browser = await puppeteer.launch({
+          headless: true,
+          args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        });
+      } catch (error) {
+        console.error('Puppeteerの起動エラー:', error);
+        throw new Error(`Puppeteer起動エラー: ${error}`);
+      }
 
       const page = await browser.newPage();
 
@@ -82,24 +104,50 @@ export class HtmlToPdfConverter {
         deviceScaleFactor: 1,
       });
 
-      await page.goto(`file://${tempHtmlPath}`, {
-        waitUntil: 'networkidle0',
-      });
+      // ローカルHTMLファイルを開く
+      try {
+        await page.goto(`file://${tempHtmlPath}`, {
+          waitUntil: 'networkidle0',
+        });
+      } catch (error) {
+        console.error('HTMLファイルの読み込みエラー:', error);
+        throw new Error(`HTML読み込みエラー: ${error}`);
+      }
 
-      await page.pdf({
-        path: outputPath,
-        format: 'A4',
-        printBackground: true,
-        preferCSSPageSize: true,
-      });
-
-      await browser.close();
-      await fs.promises.unlink(tempHtmlPath);
+      // PDF生成
+      try {
+        await page.pdf({
+          path: outputPath,
+          format: 'A4',
+          printBackground: true,
+          preferCSSPageSize: true,
+        });
+      } catch (error) {
+        console.error('PDF生成エラー:', error);
+        throw new Error(`PDF生成エラー: ${error}`);
+      }
 
       console.log('PDF generation completed successfully');
     } catch (error) {
-      console.error('Error during PDF conversion:', error);
-      throw new Error(`PDF conversion failed: ${error}`);
+      console.error('PDF conversion process failed:', error);
+      throw error;
+    } finally {
+      // ブラウザが起動していたら必ず閉じる
+      if (browser) {
+        try {
+          await browser.close();
+        } catch (error) {
+          console.error('ブラウザのクローズエラー:', error);
+        }
+      }
+      // 一時ファイルが存在していれば削除する
+      try {
+        if (fs.existsSync(tempHtmlPath)) {
+          await fs.promises.unlink(tempHtmlPath);
+        }
+      } catch (error) {
+        console.error('一時ファイルの削除エラー:', error);
+      }
     }
   }
 }
@@ -122,6 +170,10 @@ if (require.main === module) {
         user_name: '山田 太郎',
         birth_date: '1990年1月1日',
         address: '東京都渋谷区渋谷1-1-1',
+        circleDates: '2025-02-22,2025-02-25',
+        triangleDates: '2025-02-23',
+        crossDates: '2025-02-24',
+        diamondDates: '2025-02-26',
       };
 
       const converter = new HtmlToPdfConverter(templatePath);
@@ -129,7 +181,7 @@ if (require.main === module) {
 
       console.log(`PDF file has been created successfully at: ${outputPath}`);
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error in main execution:', error);
       process.exit(1);
     }
   }

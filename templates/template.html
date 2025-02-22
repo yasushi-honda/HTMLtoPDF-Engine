@@ -217,31 +217,49 @@
           <th>訪問日</th>
           <td colspan="3">
             <div class="calendar-row" id="calendarContainer">
+              <!-- マーカー情報をテンプレート変数からセット -->
               <script>
-                function generateCalendar(year, month) {
+                window.markerData = {
+                  circleDates: '{{circleDates}}', // 例："2025-02-22,2025-02-25"
+                  triangleDates: '{{triangleDates}}', // 例："2025-02-23"
+                  crossDates: '{{crossDates}}', // 例："2025-02-24"
+                  diamondDates: '{{diamondDates}}', // 例："2025-02-26"
+                };
+              </script>
+
+              <script>
+                function generateCalendar(year, month, markers) {
+                  // markers.circleDates などはカンマ区切りの日付文字列（例："2025-02-22,2025-02-25"）とする
+                  const parseDates = (datesStr) => {
+                    if (!datesStr) return [];
+                    return datesStr.split(',').map((s) => {
+                      const d = new Date(s.trim());
+                      return { year: d.getFullYear(), month: d.getMonth(), date: d.getDate() };
+                    });
+                  };
+
+                  const circleDates = parseDates(markers.circleDates);
+                  const triangleDates = parseDates(markers.triangleDates);
+                  const crossDates = parseDates(markers.crossDates);
+                  const diamondDates = parseDates(markers.diamondDates);
+
                   const firstDay = new Date(year, month, 1);
                   const lastDay = new Date(year, month + 1, 0);
 
-                  const today = new Date();
-                  const todayYear = today.getFullYear();
-                  const todayMonth = today.getMonth();
-                  const todayDate = today.getDate();
-
                   let calendarHtml = `
-                  <div class="calendar">
-                    <div class="calendar-header">
-                      <div>${year}年${month + 1}月</div>
-                    </div>
-                    <table class="exact-calendar">
-                      <tbody>
-                `;
+                    <div class="calendar">
+                      <div class="calendar-header">
+                        <div>${year}年${month + 1}月</div>
+                      </div>
+                      <table class="exact-calendar">
+                        <tbody>
+                  `;
 
                   const firstDayOfWeek = firstDay.getDay();
                   let currentDay = 1;
 
                   while (currentDay <= lastDay.getDate()) {
                     let weekHtml = '<tr>';
-
                     for (let i = 0; i < 7; i++) {
                       if (
                         (currentDay === 1 && i < firstDayOfWeek) ||
@@ -250,21 +268,36 @@
                         weekHtml += '<td></td>';
                       } else {
                         let symbol = '';
-                        if (year === todayYear && month === todayMonth) {
-                          if (currentDay === todayDate) {
-                            symbol = '<span class="symbol circle"></span>';
-                          } else if (currentDay === todayDate + 1) {
-                            symbol = '<span class="symbol triangle"></span>';
-                          } else if (currentDay === todayDate + 2) {
-                            symbol = '<span class="symbol cross"></span>';
-                          }
+                        // マーカーの存在チェック（優先順位は任意で調整してください）
+                        if (
+                          circleDates.some(
+                            (d) => d.year === year && d.month === month && d.date === currentDay
+                          )
+                        ) {
+                          symbol = '<span class="symbol circle"></span>';
+                        } else if (
+                          triangleDates.some(
+                            (d) => d.year === year && d.month === month && d.date === currentDay
+                          )
+                        ) {
+                          symbol = '<span class="symbol triangle"></span>';
+                        } else if (
+                          crossDates.some(
+                            (d) => d.year === year && d.month === month && d.date === currentDay
+                          )
+                        ) {
+                          symbol = '<span class="symbol cross"></span>';
+                        } else if (
+                          diamondDates.some(
+                            (d) => d.year === year && d.month === month && d.date === currentDay
+                          )
+                        ) {
+                          symbol = '<span class="symbol diamond"></span>';
                         }
-
                         weekHtml += `<td><span class="date-text">${currentDay}</span>${symbol}</td>`;
                         currentDay++;
                       }
                     }
-
                     weekHtml += '</tr>';
                     calendarHtml += weekHtml;
                   }
@@ -274,10 +307,11 @@
                     </table>
                   </div>
                 `;
-
                   return calendarHtml;
                 }
 
+                const markers = window.markerData || {};
+                // 現在月と翌月のカレンダーを生成（必要に応じて変更してください）
                 const today = new Date();
                 const currentYear = today.getFullYear();
                 const currentMonth = today.getMonth();
@@ -287,8 +321,8 @@
 
                 const container = document.getElementById('calendarContainer');
                 container.innerHTML =
-                  generateCalendar(currentYear, currentMonth) +
-                  generateCalendar(nextYear, nextMonth);
+                  generateCalendar(currentYear, currentMonth, markers) +
+                  generateCalendar(nextYear, nextMonth, markers);
               </script>
             </div>
             <div class="calendar-note">
